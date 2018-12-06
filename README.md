@@ -29,3 +29,6 @@ We used Python from Jupyter Notebook of Anaconda, and used Monte Carlo Simulatio
 
 We obtained data from Hall Health, and used it to find probability of each situation. We have observed that the age, gender and type of appointments has no statistical significance on no show rate (there is little bit of difference but can be negligible)
 and 26.9% of appointments involves the no show patients.
+
+
+The MHApptData_Analysis.xlsx is modified version of original file (MHApptData.xlsx) to enable it to be analyzed -- the original data was hard to be parse through in R studio. 
