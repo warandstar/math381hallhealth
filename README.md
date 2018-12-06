@@ -17,7 +17,7 @@ Thus, we have considered the modified fee system where they will pay the fees af
 
 In addition, we have considered the overbooking model like in airplane booking system. Basically, we will make each slot able to be booked for at most 2 patients such that we will reduce the wasted resource for time and space at that time. The problem is that if everyone shows up for every slot for that day, it is inevitable for clinic to tell patients to go back home and reschedule for the next time. This is not very ideal for the clinic as it is penalizing on the patients who try to come to appointments, not who do not show up to the appointments!
 
-Thus, we have considered the modified overbooking model, which is half overbooking model. We will only allow 8~10:30 am and 1~3:30pm to be overbooked and other time to be normal as now. The motivation behind those specific time is that at that time we have observed higher no show rate than other time as patients oversleep or lunch breaktime. Overall, this method works way better than the full overbooking system we have described earlier.
+Thus, we have considered the modified overbooking model, which is half overbooking model. We will only allow 8 to 10:30 am and 1 to 3:30pm to be overbooked and other time to be normal as now. The motivation behind those specific time is that at that time we have observed higher no show rate than other time as patients oversleep or lunch breaktime. Overall, this method works way better than the full overbooking system we have described earlier.
 
 Among those models, the half overbooking system has performed the best out of all 4 stratetegies.
 
