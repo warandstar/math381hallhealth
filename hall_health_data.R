@@ -299,3 +299,25 @@ facts <- as.factor(Appt_Status)
 hist(Appt_Status, breaks = c(-1.5, -0.5, 0.5, 1.5), main = "no show status of each patients")
 
 table(Appt_Type)
+
+length(Waiting_Days[Waiting_Days<=7]) / length(Waiting_Days)
+length(Waiting_Days[Waiting_Days<=7])
+sum(table(Appt_Status[Waiting_Days<=7])[1:2]) / length(Waiting_Days[Waiting_Days<=7]) 
+
+length(Waiting_Days[Waiting_Days<=14 & Waiting_Days > 7]) / length(Waiting_Days)
+length(Waiting_Days[Waiting_Days<=14 & Waiting_Days > 7])
+sum(table(Appt_Status[Waiting_Days<=14 & Waiting_Days > 7])[1:2]) / length(Waiting_Days[Waiting_Days<=14 & Waiting_Days > 7]) 
+
+length(Waiting_Days[Waiting_Days<=21 & Waiting_Days > 14]) / length(Waiting_Days)
+length(Waiting_Days[Waiting_Days<=21 & Waiting_Days > 14])
+sum(table(Appt_Status[Waiting_Days<=21 & Waiting_Days > 14])[1:2]) / length(Waiting_Days[Waiting_Days<=21 & Waiting_Days > 14])
+
+length(Waiting_Days[Waiting_Days<=28 & Waiting_Days > 21]) / length(Waiting_Days)
+length(Waiting_Days[Waiting_Days<=28 & Waiting_Days > 21])
+sum(table(Appt_Status[Waiting_Days<=28 & Waiting_Days > 21])[1:2]) / length(Waiting_Days[Waiting_Days<=28 & Waiting_Days > 21])
+
+
+length(Waiting_Days[Waiting_Days>28]) / length(Waiting_Days)
+length(Waiting_Days[Waiting_Days>28])
+sum(table(Appt_Status[Waiting_Days>28])[1:2]) / length(Waiting_Days[Waiting_Days>28]) 
+
