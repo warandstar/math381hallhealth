@@ -1,108 +1,126 @@
 library(readxl)
+library(dplyr)
+hall_health <- read_excel("MHApptData_Fixed.xlsx", col_types = c("numeric", "date", "date", "numeric", "text", "text", "numeric", "numeric", "text", "numeric", "text", "text"))
 
-hall_health_data <- as.matrix(read_excel("MHApptData_Fixed.xlsx", col_types = c("numeric", "date", "date", "numeric", "text", "text", "numeric", "numeric", "text", "numeric", "text", "text")))
+# change the column names for the convenience
+
+hall_health <- hall_health %>%
+  rename(PT_ID = `Pt ID`, 
+         Appt_Date = `Appt Date`,
+         Appt_Time = `Appt Time`, 
+         Appt_Status = `Appt Status`,
+         Appt_Type = `Appt Type`, 
+         Waiting_Days  = `Lead Days`)
+  
+mutate(hall_health, Appt_Date = as.Date(Appt_Date), Appt_Time = as.character(Appt_Time))
+         
+time_distribution <- table(hall_health$Appt_Time)
 
 
-PT_ID = strtoi(hall_health_data[,1])
+# see visualization of the hall health data
+table(hall_health$Sex)
+table(hall_health$Age)
+table(hall_health$Appt_Status)
+table(hall_health$Waiting_Days)
 
-Appt_Date = as.Date(hall_health_data[,2])
+hist(hall_health$Appt_Status)
+hist(hall_health$Waiting_Days)
+hist(hall_health$Age)
 
-Appt_Time = hall_health_data[,3]
+# set the no show ratio
+no_show_ratio = sum(hall_health$Appt_Status == -1) / length(hall_health$Appt_Status)
 
-time_distribution <- table(Appt_Time)
-
-Appt_Type <- hall_health_data[,5]
-
-
-Appt_Status <- strtoi(hall_health_data[,4])
-
-Waiting_Days <- strtoi(hall_health_data[,8])
-
-sex <- hall_health_data[,9]
-
-age <- strtoi(hall_health_data[,10])
-
-table(sex)
-table(age)
-table(Appt_Status)
-table(Waiting_Days)
-
-hist(Appt_Status)
-hist(Waiting_Days)
-hist(age)
-
-no_show_ratio = sum(Appt_Status == -1) / length(Appt_Status)
-
-table(Appt_Status[Waiting_Days<=7])
-table(Appt_Status[Waiting_Days > 7 & Waiting_Days <= 14])
-table(Appt_Status[Waiting_Days > 14 & Waiting_Days <= 21])
-table(Appt_Status[Waiting_Days > 21 & Waiting_Days <= 28])
-table(Appt_Status[Waiting_Days > 28])
-
-table(Appt_Status[sex == "Female"])
-table(Appt_Status[sex == "Male"])
-
-table(Appt_Status[age < 23])
-table(Appt_Status[age >= 23 & age < 27])
-table(Appt_Status[age >= 27 & age < 32])
-table(Appt_Status[age >= 32])
-
-times<-c("1899-12-30 07:30:00", "1899-12-30 08:00:00","1899-12-30 08:30:00","1899-12-30 09:00:00", "1899-12-30 09:30:00","1899-12-30 10:00:00", "1899-12-30 10:30:00","1899-12-30 11:00:00","1899-12-30 11:30:00","1899-12-30 12:00:00","1899-12-30 12:30:00","1899-12-30 13:00:00","1899-12-30 13:30:00","1899-12-30 14:00:00","1899-12-30 14:30:00","1899-12-30 15:00:00","1899-12-30 15:30:00","1899-12-30 16:00:00","1899-12-30 16:30:00","1899-12-30 17:00:00","1899-12-30 17:30:00")
-
-no_show_time = 1:21
-show_time = 1:21
-x = 1:21
-no_show_time[1] = no_show_time[21] = 0
-show_time[1] = table(Appt_Status[Appt_Time == times[1]])[1]
-show_time[21] = table(Appt_Status[Appt_Time == times[21]])[1]
-for (i in 2:20) {
-  if (!is.null(table(Appt_Status[Appt_Time == times[i]])[2])) {
-    no_show_time[i] = table(Appt_Status[Appt_Time == times[i]])[1]
-    show_time[i] = table(Appt_Status[Appt_Time == times[i]])[2]
-  } else {
-    no_show_time[i] = 0
-    show_time[i] = table(Appt_Status[Appt_Time == times[i]])[1]
-  }
-
+# function to create no show/show based on given waiting days
+# min: minimum waiting day, max: maximum waiting day
+appt_status_days <- function(min, max) {
+  temp <- hall_health %>%
+    filter(Waiting_Days <= max, Waiting_Days > min) %>%
+    select(Appt_Status)
+  table(temp)
 }
 
-for (i in 1:21) {
+# no show/show based on waiting days
+appt_status_days(0, 7)
+appt_status_days(7, 14)
+appt_status_days(14, 21)
+appt_status_days(21, 28)
+appt_status_days(28, 1000)
+
+# no show/show based on sex
+table(hall_health$Appt_Status[sex == "Female"])
+table(hall_health$Appt_Status[sex == "Male"])
+
+# no show/show based on age
+appt_status_age <- function(min, max) {
+  temp <- hall_health %>%
+    filter(Age < max, Age >= min) %>%
+    select(Appt_Status)
+  table(temp)
+}
+
+# undergrad students
+appt_status_age(0, 23)
+# grad students (or mid 20s)
+appt_status_age(23, 27)
+# grad students (or late 20s to early 30s)
+appt_status_age(27, 32)
+# late grad students and professors and other alumni 
+appt_status_age(32, 100)
+
+
+# mainly due to weird time handling on  Excel
+#times<-c("1899-12-31 08:00:00","1899-12-31 08:30:00","1899-12-31 09:00:00", "1899-12-31 09:30:00","1899-12-31 10:00:00", "1899-12-31 10:30:00","1899-12-31 11:00:00","1899-12-31 11:30:00","1899-12-31 12:00:00","1899-12-31 12:30:00","1899-12-31 13:00:00","1899-12-31 13:30:00","1899-12-31 14:00:00","1899-12-31 14:30:00","1899-12-31 15:00:00","1899-12-31 15:30:00","1899-12-31 16:00:00","1899-12-31 16:30:00","1899-12-31 17:00:00")
+times<-c("1899-12-31 00:00:00","1899-12-31 00:30:00","1899-12-31 01:00:00", "1899-12-31 01:30:00","1899-12-31 02:00:00", "1899-12-31 02:30:00","1899-12-31 03:00:00","1899-12-31 03:30:00","1899-12-31 04:00:00","1899-12-31 04:30:00","1899-12-31 05:00:00","1899-12-31 05:30:00","1899-12-31 06:00:00","1899-12-31 06:30:00","1899-12-31 07:00:00","1899-12-31 07:30:00","1899-12-31 08:00:00","1899-12-31 08:30:00","1899-12-31 09:00:00")
+
+
+# no show rate based on time
+no_show_time = 1:19
+show_time = 1:19
+x = 1:19
+for (i in 1:19) {
+  temp_table <- table(filter(hall_health, Appt_Time == times[i]) %>%
+                        select(Appt_Status))
+  show_time[i] <- temp_table[3]
+  no_show_time[i] <- temp_table[1]
   x[i] <- no_show_time[i] / (no_show_time[i] + show_time[i])
 }
 
-
-plot(no_show_time[2:20], type = "b", ylim = c(0, 1200))
-lines(show_time[2:20], type = "b", col = "red")
+plot(no_show_time, type = "b", ylim = c(0, 1200))
+lines(show_time, type = "b", col = "red")
 
 plot(x, type = "b")
 
+sum(no_show_time[1:5]) / (sum(no_show_time[1:5]) + sum(show_time[1:5]))
+sum(no_show_time[6:19]) / (sum(no_show_time[6:19]) + sum(show_time[6:19]))
 
-sum(no_show_time[2:6]) / (sum(no_show_time[2:6]) + sum(show_time[2:6]))
-sum(no_show_time[7:20]) / (sum(no_show_time[7:20]) + sum(show_time[7:20]))
-
-
-uniqueness1 <- table(PT_ID)
+# to see if the patient comes back after no show
+# one_missing patients are the ones who missed appointment once but later come back just fine
+# no show no return is the one who never comes back after no show
+# one_time patients are the one who visits just once
+# good patients are the ones who never missed on repeated visits
+uniqueness1 <- table(hall_health$PT_ID)
 number <- table(uniqueness1)
-uniqueness2 <- table(PT_ID[Appt_Status == -1])
+uniqueness2 <- table(hall_health$PT_ID[Appt_Status == -1])
 no_show_numbers <- table(uniqueness2)
+
 no_show_no_return = 0
 good_patients = 0
 repeated_patients = 0
 one_time_patients = 0
 one_missing_patients = 0
 
-for (b in unique(PT_ID)) {
+for (b in unique(hall_health$PT_ID)) {
   a = toString(b)
   array = uniqueness1[a]
   if (array == 1) {
-    if (Appt_Status[PT_ID == a] == -1) {
+    if (hall_health$Appt_Status[hall_health$PT_ID == a] == -1) {
       no_show_no_return = no_show_no_return + 1
     } else {
       one_time_patients = one_time_patients + 1
     }
   }
   else if (array > 1) {
-    numb = sum(Appt_Status[PT_ID == a] == -1)
+    numb = sum(hall_health$Appt_Status[hall_health$PT_ID == a] == -1)
     if (numb  == 0) {
       good_patients = good_patients + 1
     } else if (numb == 1) {
@@ -120,21 +138,23 @@ repeated_patients
 one_missing_patients
 
 
-length(unique(PT_ID))
-length(PT_ID[Appt_Status == -1])
-length(unique(PT_ID[Appt_Status == -1]))
+length(unique(hall_health$PT_ID))
+length(hall_health$PT_ID[hall_health$Appt_Status == -1])
+length(unique(hall_health$PT_ID[hall_health$Appt_Status == -1]))
 plot(number)
 
 
-mean(table(Appt_Date))
-sd(table(Appt_Date))
-dates = sort(unique(Appt_Date))
-total_show_data = matrix(0, 21, length(dates))
-total_no_show_data = matrix(0, 21, length(dates))
+# no show rates based on appointment dates and time
+mean(table(hall_health$Appt_Date))
+sd(table(hall_health$Appt_Date))
+dates = sort(unique(hall_health$Appt_Date))
+total_show_data = matrix(0, 19, length(dates))
+total_no_show_data = matrix(0, 19, length(dates))
 curr_date = 1
+
 for (day in dates) {
-  for (time in 1:21) {
-    data_date_time = Appt_Status[Appt_Date == day & Appt_Time == times[time]]
+  for (time in 1:19) {
+    data_date_time = hall_health$Appt_Status[hall_health$Appt_Date == day & hall_health$Appt_Time == times[time]]
     no_show_date_time = 0
     show_date_time = 0
     if (length(data_date_time) > 0) {
@@ -149,22 +169,24 @@ for (day in dates) {
 
 total_percentage = total_no_show_data / (total_no_show_data + total_show_data)
 
-means_no_show_hours = 1:21
-means_show_hours = 1:21
-for (i in 1:21) {
+# find the hours-based average no show rate
+means_no_show_hours = 1:19
+means_show_hours = 1:19
+for (i in 1:19) {
   means_no_show_hours[i] = mean(total_no_show_data[i,])
   means_show_hours[i] = mean(total_show_data[i,])
 }
 plot(means_no_show_hours, type = "b", ylim = c(0,4))
 lines(means_show_hours, type = "b", col = 2)
 means_percentage_hours = means_no_show_hours / (means_no_show_hours + means_show_hours)
-plot(means_percentage_hours, type = "b", ylim = c(0.2, 0.3))
+plot(means_percentage_hours, type = "b")
 
+# find the days-based average no show rate
 means_no_show_days = 1:273
 means_show_days = 1:273
 for (i in 1:273) {
-  means_no_show_days[i] = mean(total_no_show_data[2:20,i])
-  means_show_days[i] = mean(total_show_data[2:20,i])
+  means_no_show_days[i] = mean(total_no_show_data[1:19,i])
+  means_show_days[i] = mean(total_show_data[1:19,i])
 }
 plot(means_no_show_days, type = "l", ylim = c(0,4))
 lines(means_show_days, type = "l", col = 2)
@@ -174,17 +196,15 @@ abline(no_show_ratio, 0, col = 2)
 abline(no_show_ratio + sd(means_percentage_days), 0, col = 3)
 abline(no_show_ratio - sd(means_percentage_days), 0, col = 4)
 
-stand = sd(means_percentage_days)
-
 means_no_show_peak = 1:273
 means_show_peak = 1:273
 means_no_show_non = 1:273
 means_show_non = 1:273
 for (i in 1:273) {
-  means_no_show_peak[i] = mean(total_no_show_data[2:6,i])
-  means_show_peak[i] = mean(total_show_data[2:6,i])
-  means_no_show_non[i] = mean(total_no_show_data[7:20,i])
-  means_show_non[i] = mean(total_show_data[7:20,i])
+  means_no_show_peak[i] = mean(total_no_show_data[1:5,i])
+  means_show_peak[i] = mean(total_show_data[1:5,i])
+  means_no_show_non[i] = mean(total_no_show_data[6:19,i])
+  means_show_non[i] = mean(total_show_data[6:19,i])
   
 }
 means_percentage_peak = means_no_show_peak / (means_no_show_peak + means_show_peak)
@@ -199,9 +219,10 @@ abline(peak_mean, 0, col = 3)
 abline(non_mean, 0, col = 4)
 
 
-uniqueness_fee <- table(PT_ID[Appt_Date %in% dates[235:273]])
+# find the no show rates after the fee introduced
+uniqueness_fee <- table(hall_health$PT_ID[hall_health$Appt_Date %in% dates[235:273]])
 number_fee <- table(uniqueness_fee)
-uniqueness2_fee <- table(PT_ID[Appt_Date %in% dates[235:273] & Appt_Status == -1])
+uniqueness2_fee <- table(hall_health$PT_ID[hall_health$Appt_Date %in% dates[235:273] & hall_health$Appt_Status == -1])
 no_show_numbers_fee <- table(uniqueness2_fee)
 no_show_no_return_fee = 0
 good_patients_fee = 0
@@ -209,18 +230,18 @@ repeated_patients_fee = 0
 one_time_patients_fee = 0
 one_missing_patients_fee = 0
 
-for (b in unique(PT_ID[Appt_Date %in% dates[235:273]])) {
+for (b in unique(hall_health$PT_ID[hall_health$Appt_Date %in% dates[235:273]])) {
   a = toString(b)
   array = uniqueness_fee[a]
   if (array == 1) {
-    if (Appt_Status[PT_ID == a & Appt_Date %in% dates[235:273]] == -1) {
+    if (hall_health$Appt_Status[hall_health$PT_ID == a & hall_health$Appt_Date %in% dates[235:273]] == -1) {
       no_show_no_return_fee = no_show_no_return_fee + 1
     } else {
       one_time_patients_fee = one_time_patients_fee + 1
     }
   }
   else if (array > 1) {
-    numb = sum(Appt_Status[PT_ID == a & Appt_Date %in% dates[235:273]] == -1)
+    numb = sum(hall_health$Appt_Status[PT_ID == a & hall_health$Appt_Date %in% dates[235:273]] == -1)
     if (numb  == 0) {
       good_patients_fee = good_patients_fee + 1
     } else if (numb == 1) {
@@ -237,9 +258,10 @@ good_patients_fee
 repeated_patients_fee
 one_missing_patients_fee
 
-uniqueness_fee_before <- table(PT_ID[Appt_Date %in% dates[1:234]])
+# compare the no show rate data after the fee introduced with the ones before
+uniqueness_fee_before <- table(hall_health$PT_ID[hall_health$Appt_Date %in% dates[1:234]])
 number_fee_before <- table(uniqueness_fee_before)
-uniqueness2_fee_before <- table(PT_ID[Appt_Date %in% dates[1:234] & Appt_Status == -1])
+uniqueness2_fee_before <- table(hall_health$PT_ID[hall_health$Appt_Date %in% dates[1:234] & hall_health$Appt_Status == -1])
 no_show_numbers_fee_before <- table(uniqueness2_fee_before)
 no_show_no_return_fee_before = 0
 good_patients_fee_before = 0
@@ -247,18 +269,18 @@ repeated_patients_fee_before = 0
 one_time_patients_fee_before = 0
 one_missing_patients_fee_before = 0
 
-for (b in unique(PT_ID[Appt_Date %in% dates[1:234]])) {
+for (b in unique(hall_health$PT_ID[hall_health$Appt_Date %in% dates[1:234]])) {
   a = toString(b)
   array = uniqueness_fee_before[a]
   if (array == 1) {
-    if (Appt_Status[PT_ID == a & Appt_Date %in% dates[1:234]] == -1) {
+    if (hall_health$Appt_Status[hall_health$PT_ID == a & hall_health$Appt_Date %in% dates[1:234]] == -1) {
       no_show_no_return_fee_before = no_show_no_return_fee_before + 1
     } else {
       one_time_patients_fee_before = one_time_patients_fee_before + 1
     }
   }
   else if (array > 1) {
-    numb = sum(Appt_Status[PT_ID == a & Appt_Date %in% dates[1:234]] == -1)
+    numb = sum(hall_health$Appt_Status[hall_health$PT_ID == a & hall_health$Appt_Date %in% dates[1:234]] == -1)
     if (numb  == 0) {
       good_patients_fee_before = good_patients_fee_before + 1
     } else if (numb == 1) {
@@ -281,32 +303,32 @@ max(total_data)
 
 hist(Waiting_Days, breaks = 100)
 
+# misc codes
+sd(table(hall_health$Appt_Date[hall_health$Appt_Time <= times[10]])) 
+sd(table(hall_health$Appt_Date[hall_health$Appt_Time > times[10]]))
 
-sd(table(Appt_Date[Appt_Time <= times[10]])) 
-sd(table(Appt_Date[Appt_Time > times[10]]))
+hist(hall_health$Appt_Date[hall_health$Appt_Time <= times[10]], breaks = 100)
+hist(hall_health$Appt_Date[hall_health$Appt_Time > times[10]], breaks = 100)
 
-hist(Appt_Date[Appt_Time <= times[10]], breaks = 100)
-hist(Appt_Date[Appt_Time > times[10]], breaks = 100)
+table(hall_health$Appt_Time[hall_health$Appt_Time <= times[10]]) 
+table(hall_health$Appt_Time[hall_health$Appt_Time > times[10]]) 
 
-table(Appt_Time[Appt_Time <= times[10]]) 
-table(Appt_Time[Appt_Time > times[10]]) 
+table(hall_health$Appt_Status[hall_health$Appt_Date > dates[235]])
+table(hall_health$Appt_Status)
 
-table(Appt_Status[Appt_Date > dates[235]])
-table(Appt_Status)
+facts <- as.factor(hall_health$Appt_Status)
 
-facts <- as.factor(Appt_Status)
+hist(hall_health$Appt_Status, breaks = c(-1.5, -0.5, 0.5, 1.5), main = "no show status of each patients")
 
-hist(Appt_Status, breaks = c(-1.5, -0.5, 0.5, 1.5), main = "no show status of each patients")
+table(hall_health$Appt_Type)
 
-table(Appt_Type)
+length(hall_health$Waiting_Days[hall_health$Waiting_Days<=7]) / length(hall_health$Waiting_Days)
+length(hall_health$Waiting_Days[hall_health$Waiting_Days<=7])
+sum(table(hall_health$Appt_Status[hall_health$Waiting_Days<=7])[1:2]) / length(hall_health$Waiting_Days[hall_health$Waiting_Days<=7]) 
 
-length(Waiting_Days[Waiting_Days<=7]) / length(Waiting_Days)
-length(Waiting_Days[Waiting_Days<=7])
-sum(table(Appt_Status[Waiting_Days<=7])[1:2]) / length(Waiting_Days[Waiting_Days<=7]) 
-
-length(Waiting_Days[Waiting_Days<=14 & Waiting_Days > 7]) / length(Waiting_Days)
-length(Waiting_Days[Waiting_Days<=14 & Waiting_Days > 7])
-sum(table(Appt_Status[Waiting_Days<=14 & Waiting_Days > 7])[1:2]) / length(Waiting_Days[Waiting_Days<=14 & Waiting_Days > 7]) 
+length(hall_health$Waiting_Days[hall_health$Waiting_Days<=14 & hall_health$Waiting_Days > 7]) / length(hall_health$Waiting_Days)
+length(hall_health$Waiting_Days[hall_health$Waiting_Days<=14 & hall_health$Waiting_Days > 7])
+sum(table(hall_health$Appt_Status[hall_health$Waiting_Days<=14 & Waiting_Days > 7])[1:2]) / length(Waiting_Days[Waiting_Days<=14 & Waiting_Days > 7]) 
 
 length(Waiting_Days[Waiting_Days<=21 & Waiting_Days > 14]) / length(Waiting_Days)
 length(Waiting_Days[Waiting_Days<=21 & Waiting_Days > 14])
